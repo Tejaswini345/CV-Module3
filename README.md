@@ -1,10 +1,9 @@
 # Module 3 — Spatial Blur vs. Fourier Blur
 
-CSc 8830 Computer Vision. Shows that blurring an image by direct spatial
-convolution and blurring it by multiplying Fourier spectra produce the same
-result, up to floating-point rounding error.
+Computer Vision.
+Shows that blurring an image by direct spatial convolution and blurring it by multiplying Fourier spectra produce the same result, up to floating-point rounding error.
 
-## What's here
+## Scripts
 
 - `blur_core.py` — the algorithm: kernel construction, direct spatial
   convolution, FFT-based convolution, metrics, image encoding. No filtering
@@ -17,7 +16,7 @@ result, up to floating-point rounding error.
 - `templates/index.html` — the web page itself.
 - `dataset/` — put your 10 images here (see `dataset/README.txt`).
 
-## Running it
+## Instructions on How to Run
 
 ```bash
 pip install -r requirements.txt
@@ -25,12 +24,10 @@ python app.py
 ```
 
 This starts a local server at `http://127.0.0.1:5000` and opens it in your
-browser automatically. Pick an image, pick a blur type/size/strength, and the
+browser automatically. Select an image, pick a blur type/size/strength, and the
 four panels (original, spatial result, Fourier result, difference) update by
 calling back into `app.py`, which does the actual computation in Python.
 
-This is also what to screen-record for the assignment submission: the script
-running in a terminal, and the browser window it opens.
 
 ## How the comparison works
 

@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 # README
 # ------
-# Name: app.py
-# Course: CSc 8830 Computer Vision - Module 3
+# Computer Vision - Module 3
 #
 # What this does:
 # This is the Flask server for the Module 3 assignment. It runs a small
-# local website where you pick an image from the dataset/ folder, pick a
+# local website where we can pick an image from the dataset/ folder, pick a
 # blur type/size, and it shows the image blurred two different ways:
 #   1) spatial convolution (blur_core.convolve_spatial)
 #   2) Fourier domain multiplication (blur_core.convolve_fourier)

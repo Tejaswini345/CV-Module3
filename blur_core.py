@@ -1,8 +1,7 @@
 # =============================================================================
-#  blur_core.py
-#  CSc 8830 Computer Vision - Module 3
+#  Computer Vision - Module 3
 #
-#  The actual algorithm code. Everything here is plain NumPy - no filtering
+#  Here is the Algorithm code. Everything here is plain NumPy with no filtering
 #  shortcuts like scipy.signal.convolve or cv2.GaussianBlur - so the equality
 #  being demonstrated is not hidden inside a library call.
 #
