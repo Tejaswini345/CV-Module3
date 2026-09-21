@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spatial Blur vs. Fourier Blur — CSc 8830 Module 3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF0F2; --panel:#F7F9FA; --ink:#101A21; --ink-2:#47585F; --ink-3:#7C8C93;
+  --rule:#C9D2D6; --rule-soft:#DDE4E7;
+  --spatial:#0F7F72; --fourier:#6B3FBF;
+  --field:#FFFFFF;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-size:16px; line-height:1.55;
+}
+.wrap{max-width:920px; margin:0 auto; padding:0 20px 80px}
+
+.mast{padding:48px 0 26px; border-bottom:1px solid var(--rule)}
+.mast .course{
+  font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--ink-3);
+  letter-spacing:.06em; margin:0 0 16px;
+}
+h1{
+  font-family:"IBM Plex Serif",Georgia,serif; font-weight:600;
+  font-size:clamp(27px,4.6vw,42px); line-height:1.12; margin:0 0 16px; max-width:20ch;
+}
+.claim{
+  font-family:"IBM Plex Serif",Georgia,serif; font-size:clamp(16px,2vw,18px);
+  line-height:1.6; color:var(--ink-2); max-width:62ch; margin:0;
+}
+.claim b{color:var(--ink); font-weight:600}
+
+section{padding:38px 0 6px; border-bottom:1px solid var(--rule-soft)}
+section:last-of-type{border-bottom:0}
+h2{
+  font-family:"IBM Plex Serif",Georgia,serif; font-size:21px; font-weight:600;
+  margin:0 0 6px; line-height:1.25;
+}
+.lede{color:var(--ink-2); max-width:66ch; margin:0 0 22px}
+
+.controls{
+  background:var(--panel); border:1px solid var(--rule); border-radius:3px;
+  padding:18px; display:grid; gap:16px;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); align-items:end;
+}
+.ctl{display:flex; flex-direction:column; gap:7px; min-width:0}
+.ctl label{font-size:12.5px; color:var(--ink-2); font-weight:500}
+select{
+  font:inherit; font-size:14px; color:var(--ink); background:var(--field);
+  border:1px solid var(--rule); border-radius:2px; padding:8px 10px; width:100%;
+}
+input[type=range]{width:100%; accent-color:var(--spatial)}
+.val{font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--ink-3)}
+
+.grid{display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); margin:24px 0 0}
+figure{margin:0; min-width:0}
+img.shot{
+  width:100%; height:auto; display:block; image-rendering:pixelated;
+  background:var(--field); border:1px solid var(--rule); border-radius:2px; aspect-ratio:1/1; object-fit:contain;
+}
+figcaption{
+  font-family:"IBM Plex Mono",monospace; font-size:11.5px; line-height:1.45;
+  color:var(--ink-3); margin-top:8px; padding-left:9px; border-left:2px solid var(--rule);
+}
+figcaption b{display:block; color:var(--ink-2); font-weight:500; font-size:12px}
+figure.spatial figcaption{border-left-color:var(--spatial)}
+figure.spatial figcaption b{color:var(--spatial)}
+figure.fourier figcaption{border-left-color:var(--fourier)}
+figure.fourier figcaption b{color:var(--fourier)}
+
+.verdict{
+  margin:24px 0 0; padding:20px; border:1px solid var(--rule); border-radius:3px;
+  background:var(--panel);
+  display:grid; gap:18px; grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+}
+.metric .k{font-size:12.5px; color:var(--ink-2); margin-bottom:5px}
+.metric .v{font-family:"IBM Plex Mono",monospace; font-size:20px; font-weight:500; color:var(--spatial)}
+.metric .u{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-3); margin-top:3px}
+
+.verdict-note{margin-top:16px; font-size:14.5px; color:var(--ink-2); max-width:64ch}
+.status{font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--ink-3); margin-top:12px; min-height:1.4em}
+.warn{
+  margin:0 0 24px; padding:12px 16px; border:1px solid #B0561B; border-radius:3px;
+  color:#B0561B; font-size:14px; background:var(--panel);
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="mast">
+  <p class="course">CSc 8830 Computer Vision · Module 3</p>
+  <h1>Blurring an image two different ways — and getting the same picture</h1>
+</header>
+
+<section>
+  <h2>Choose an image and a blur</h2>
+  {% if images|length == 0 %}
+  <div class="warn">No images found in <code>dataset/</code>. Add up to 10 image files (.png, .jpg, .jpeg, .bmp) to that folder next to app.py, then refresh this page.</div>
+  {% elif images|length < max_images %}
+  <div class="warn">Found {{ images|length }} image(s) in <code>dataset/</code> — add up to {{ max_images - images|length }} more to fill out the dropdown.</div>
+  {% endif %}
+
+  <div class="controls">
+    <div class="ctl">
+      <label for="src">Image</label>
+      <select id="src">
+        {% for name in images %}
+        <option value="{{ name }}">{{ loop.index }}. {{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="ctl">
+      <label for="colorspace">Colorspace</label>
+      <select id="colorspace">
+        <option value="gray" selected>Grayscale</option>
+        <option value="color">Color</option>
+      </select>
+    </div>
+    <div class="ctl">
+      <label for="ktype">Blur type</label>
+      <select id="ktype">
+        <option value="gauss" selected>Gaussian (smooth)</option>
+        <option value="box">Box (simple average)</option>
+      </select>
+    </div>
+    <div class="ctl">
+      <label for="ksize">Blur size <span class="val" id="ksizeV">15 × 15</span></label>
+      <input type="range" id="ksize" min="3" max="35" step="2" value="15">
+    </div>
+    <div class="ctl">
+      <label for="sigma">Blur strength (σ) <span class="val" id="sigmaV">3.0</span></label>
+      <input type="range" id="sigma" min="0.5" max="10" step="0.1" value="3">
+    </div>
+  </div>
+  <p class="status" id="status">Ready.</p>
+</section>
+
+<section>
+  <h2>Do the two methods agree?</h2>
+  <div class="grid">
+    <figure><img class="shot" id="cOrig"><figcaption><b>Original</b>input image</figcaption></figure>
+    <figure class="spatial"><img class="shot" id="cSpa"><figcaption><b>Spatial blur</b>slide the kernel over the pixels</figcaption></figure>
+    <figure class="fourier"><img class="shot" id="cFre"><figcaption><b>Fourier blur</b>multiply spectra, then invert</figcaption></figure>
+    <figure><img class="shot" id="cDif"><figcaption><b>Difference</b>brightened ×100,000</figcaption></figure>
+  </div>
+
+  <div class="verdict">
+    <div class="metric"><div class="k">Biggest pixel difference</div><div class="v" id="mMax">—</div><div class="u">out of 255</div></div>
+    <div class="metric"><div class="k">Average difference (RMS)</div><div class="v" id="mRms">—</div><div class="u">out of 255</div></div>
+    <div class="metric"><div class="k">Match quality (PSNR)</div><div class="v" id="mPsnr">—</div><div class="u">decibels — higher is closer</div></div>
+  </div>
+  <p class="verdict-note">The difference panel looks blank because it basically is — any leftover comes from ordinary computer rounding, not from the two methods actually disagreeing. That's the proof: convolving in space and multiplying in frequency produce the same image.</p>
+</section>
+
+</div>
+
+<script>
+"use strict";
+const $ = s => document.getElementById(s);
+const hasImages = {{ images|length }} > 0;
+
+function setImg(id, url){ $(id).src = url; }
+
+async function run(){
+  if(!hasImages){ $("status").textContent = "Add images to dataset/ and refresh."; return; }
+  const body = {
+    filename: $("src").value,
+    colorspace: $("colorspace").value,
+    ktype: $("ktype").value,
+    ksize: +$("ksize").value,
+    sigma: +$("sigma").value,
+  };
+  $("status").textContent = "Computing in Python…";
+  try{
+    const res = await fetch("/api/blur", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if(data.error){ $("status").textContent = data.error; return; }
+
+    setImg("cOrig", data.original);
+    setImg("cSpa", data.spatial);
+    setImg("cFre", data.fourier);
+    setImg("cDif", data.diff);
+
+    const fmt = v => v === 0 ? "0" : v.toExponential(2).replace("e","\u00A0×10").replace("+","");
+    $("mMax").textContent = fmt(data.metrics.max);
+    $("mRms").textContent = fmt(data.metrics.rms);
+    $("mPsnr").textContent = data.metrics.psnr === null ? "∞ (identical)" : data.metrics.psnr.toFixed(1);
+
+    $("status").textContent = data.info;
+  } catch(err){
+    $("status").textContent = "Could not reach the Python server — is app.py still running?";
+  }
+}
+
+$("ksize").addEventListener("input", e => { $("ksizeV").textContent = `${e.target.value} × ${e.target.value}`; });
+$("sigma").addEventListener("input", e => { $("sigmaV").textContent = (+e.target.value).toFixed(1); });
+$("ktype").addEventListener("change", e => {
+  $("sigma").disabled = e.target.value === "box";
+  $("sigma").closest(".ctl").style.opacity = e.target.value === "box" ? .45 : 1;
+});
+["src","colorspace","ktype","ksize","sigma"].forEach(id => $(id).addEventListener("change", run));
+
+if(hasImages) run();
+</script>
+</body>
+</html>
